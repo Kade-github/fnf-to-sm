@@ -3,6 +3,7 @@
 # Copyright (C) 2021 shockdude
 
 # Modified by KadeDev to add support for Dance Double
+# Small edits by Chillax to add some QoL changes/easier workflow to require less manual changes to the converted files
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,7 +103,7 @@ def fnf_to_sm(infile):
 	
 	with open(infile, "r") as chartfile:
 		chart_json = json.loads(chartfile.read().strip('\0'))
-		chart_json["diff"] = "Medium"
+		chart_json["diff"] = "Hard"
 		chart_jsons.append(chart_json)
 		
 	if os.path.isfile(infile_easy):
@@ -127,8 +128,11 @@ def fnf_to_sm(infile):
 		if len(sm_header) == 0:
 			song_name = chart_json["song"]["song"]
 			song_bpm = chart_json["song"]["bpm"]
+			song_artist = chart_json["song"]["player1"]
+			song_credit = chart_json["song"]["player2"]
+			song_subtitle = chart_json["song"]["speed"]
 			
-			print("Converting {} to {}.sm".format(infile, song_name))
+			print("Converting .json to .sm")
 
 			# build tempomap
 			bpms = "#BPMS:"
@@ -163,7 +167,7 @@ def fnf_to_sm(infile):
 
 			# write .sm header
 			sm_header = "#TITLE:{}\n".format(song_name)
-			sm_header += "#MUSIC:{}.ogg;\n".format(song_name)
+			sm_header += "#MUSIC:{}.ogg;\n#ARTIST:{};\n#CREDIT:{};\n#SUBTITLE:{};\n".format(song_name, song_artist, song_credit, song_subtitle)
 			sm_header += bpms
 
 		notes = {}
@@ -206,7 +210,7 @@ def fnf_to_sm(infile):
 			sm_notes += "#NOTES:\n"
 			sm_notes += "	  dance-double:\n"
 			sm_notes += "	  :\n"
-			sm_notes += "	  {}:\n".format(chart_json["diff"]) # e.g. Challenge:
+			sm_notes += "	  {}:\n".format(chart_json["diff"]) # e.g. Hard:
 			sm_notes += "	  {}:\n".format(diff_value)
 			sm_notes += "	  :\n" # empty groove radar
 
@@ -238,10 +242,12 @@ def fnf_to_sm(infile):
 					sm_notes += ',\n'
 
 	# output simfile
-	with open("{}.sm".format(song_name), "w") as outfile:
+	with open("{}.sm".format(song_name.replace(" ", "-").casefold()), "w") as outfile:
 		outfile.write(sm_header)
 		if len(sm_notes) > 0:
 			outfile.write(sm_notes)
+	
+	print("Done converting .json to .sm!")
 
 # get simple header tag value
 def get_tag_value(line, tag):
@@ -275,13 +281,28 @@ def sm_to_fnf(infile):
 	fnf_notes = []
 	section_number = 0
 	offset = 0
-	print("Converting {} to blammed.json".format(infile))
+	print("Converting .sm to .json...")
 	with open(infile, "r") as chartfile:
 		line = chartfile.readline()
 		while len(line) > 0:
 			value = get_tag_value(line, "TITLE")
 			if value != None:
 				title = value
+				line = chartfile.readline()
+				continue
+			value = get_tag_value(line, "ARTIST")
+			if value != None:
+				player1 = value
+				line = chartfile.readline()
+				continue
+			value = get_tag_value(line, "CREDIT")
+			if value != None:
+				player2 = value
+				line = chartfile.readline()
+				continue
+			value = get_tag_value(line, "SUBTITLE")
+			if value != None:
+				speed = value
 				line = chartfile.readline()
 				continue
 			value = get_tag_value(line, "OFFSET")
@@ -307,9 +328,8 @@ def sm_to_fnf(infile):
 				chartfile.readline()
 				line = chartfile.readline()
 				
-				# TODO support difficulties other than Challenge
-				if line.strip() != "Challenge:":
-				#if line.strip() != "Hard:":
+				# TODO support difficulties other than Hard
+				if line.strip() != "Hard:":
 					line = chartfile.readline()
 					continue
 				chartfile.readline()
@@ -380,20 +400,21 @@ def sm_to_fnf(infile):
 	# assemble the fnf json
 	chart_json = {}
 	chart_json["song"] = {}
-	#chart_json["song"]["song"] = title
-	chart_json["song"]["song"] = "Blammed"
+	chart_json["song"]["song"] = title
 	chart_json["song"]["notes"] = fnf_notes
 	chart_json["song"]["bpm"] = tempomarkers[0].getBPM()
 	chart_json["song"]["sections"] = 0
-	chart_json["song"]["needsVoices"] = False
-	chart_json["song"]["player1"] = "bf"
-	chart_json["song"]["player2"] = "pico"
+	chart_json["song"]["needsVoices"] = True
+	chart_json["song"]["player1"] = player1
+	chart_json["song"]["player2"] = player2
 	chart_json["song"]["sectionLengths"] = []
-	chart_json["song"]["speed"] = 2.0
+	chart_json["song"]["speed"] = speed
 	
-	#with open("{}.json".format(title), "w") as outfile:
-	with open("blammed.json".format(title), "w") as outfile:
+	# output json
+	with open("{}{}.json".format(title.replace(" ", "-").casefold(), "-hard"), "w") as outfile:
 		json.dump(chart_json, outfile)
+	
+	print("Done converting .sm to .json!")
 
 def usage():
 	print("FNF SM converter")
