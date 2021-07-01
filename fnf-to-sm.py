@@ -275,7 +275,7 @@ def sm_to_fnf(infile):
 	fnf_notes = []
 	section_number = 0
 	offset = 0
-	print("Converting {} to blammed.json".format(infile))
+	print("Converting {}".format(infile))
 	with open(infile, "r") as chartfile:
 		line = chartfile.readline()
 		while len(line) > 0:
@@ -333,9 +333,11 @@ def sm_to_fnf(infile):
 						fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
 					else:
 						fnf_section["changeBPM"] = False
-					fnf_section["mustHitSection"] = True
+					fnf_section["mustHitSection"] = False
 					fnf_section["typeOfSection"] = 0
 					
+					hitEm = False
+
 					section_notes = []
 					for i in range(len(measure_notes)):
 						notes_row = measure_notes[i]
@@ -344,15 +346,19 @@ def sm_to_fnf(infile):
 							# since in dance-double we're assuming that 4-7 is bf and 0-3 is player2.
 							# so we gotta minus 4 or add 4 etc.
 
-							newPenis = 0
-
-							if j >= 4:
-								newPenis = j - 4
-							else:
-								newPenis = j + 4
 
 							if notes_row[j] in ("1","2","4"):
+								newPenis = j
+								if j > 3:
+									fnf_section["mustHitSection"] = True
+									newPenis = j - 4
+									hitEm = True
+								if j < 3 and hitEm:
+									newPenis = j + 4
+									print(newPenis)
 								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, newPenis, 0]
+								if hitEm and j < 3:
+									print(note)
 								section_notes.append(note)
 								if notes_row[j] in ("2","4"):
 									tracked_holds[j] = note
@@ -363,6 +369,10 @@ def sm_to_fnf(infile):
 									del tracked_holds[j]
 									note[2] = tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset - note[0]
 							elif notes_row[j] == "M": # mines work with tricky fire notes
+								newPenis = j
+								if j > 3:
+									fnf_section["mustHitSection"] = True
+									newPenis = j - 4
 								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, newPenis + 8, 0]
 								section_notes.append(note)
 					
@@ -378,21 +388,32 @@ def sm_to_fnf(infile):
 			line = chartfile.readline()
 			
 	# assemble the fnf json
+
+	player2 = input("Input Player2: ")
+	player1 = input("Input Player1: ")
+
+	songTitle = input("Input song title: ")
+
+	keStage = input("Kade Engine Stage (Optional, if you don't use KE put in nothing): ")
+
 	chart_json = {}
 	chart_json["song"] = {}
 	#chart_json["song"]["song"] = title
-	chart_json["song"]["song"] = "Blammed"
+	chart_json["song"]["song"] = songTitle
 	chart_json["song"]["notes"] = fnf_notes
 	chart_json["song"]["bpm"] = tempomarkers[0].getBPM()
 	chart_json["song"]["sections"] = 0
-	chart_json["song"]["needsVoices"] = False
-	chart_json["song"]["player1"] = "bf"
-	chart_json["song"]["player2"] = "pico"
+	chart_json["song"]["needsVoices"] = True
+	chart_json["song"]["player1"] = player1
+	chart_json["song"]["player2"] = player2
 	chart_json["song"]["sectionLengths"] = []
 	chart_json["song"]["speed"] = 2.0
-	
+	chart_json["song"]["stage"] = keStage
+
+	songTitle += ".json"
+
 	#with open("{}.json".format(title), "w") as outfile:
-	with open("blammed.json".format(title), "w") as outfile:
+	with open(songTitle.format(title).lower(), "w") as outfile:
 		json.dump(chart_json, outfile)
 
 def usage():
