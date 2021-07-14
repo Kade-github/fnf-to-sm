@@ -15,14 +15,13 @@ easy & hard .jsons in the same folder, then FNF-to-SM will output a single .sm w
 This version of SM-to-FNF currently only supports Hard Difficulty Dance Double .sm files conversion. \
 The output will use the same name of your chart with the "-hard" suffix, "chart-hard.json", which is meant to replace your song on the Hard difficulty.
 
-By default player1 (ie. Boyfriend), player2 (ie. Dad), chart speed and stage (Kade Engine only) are converted from their .json, \
+By default player1 (ie. Boyfriend), player2 (ie. Dad) and chart speed are converted from their .json, \
 incase you made a song within FNF and wanted to edit it with external tools (such as ArrowVortex). \
 However, if you are making a .sm simfile from scratch you need to assign them. \
-In order to assign them, you have to go into the simfile's Properties and fill in the next properties: \
-**Artist** to determine the **Player 1** (for example, bf - being the Boyfriend) \
-**Credit** to determine the **Player 2** (for example, dad - being the Dad) \
-**Subtitle** to determine the **speed** (for example, 2.0) \
-**Background** to determine the **stage** (for example, philly - Pico's stage) \
+In order to assign them, you have to go into the simfile's Properties and fill in the next attributes: \
+**Artist** for determining the **Player 1** (for example, bf - being Boyfriend) \
+**Credit** for determining the **Player 2** (for example, dad - being the Dad) \
+**Subtitle** for determining the **speed** (for example, 1.0) \
 
 Written by shockdude in Python 3.7 \
 Original chart-to-sm.js by Paturages \
