@@ -311,8 +311,7 @@ def sm_to_fnf(infile):
 				if line.strip() != "Challenge:":
 				#if line.strip() != "Hard:":
 					line = chartfile.readline()
-					continue
-				chartfile.readline()
+					#continue
 				chartfile.readline()
 				line = chartfile.readline()
 				tracked_holds = {} # for tracking hold notes, need to add tails later
