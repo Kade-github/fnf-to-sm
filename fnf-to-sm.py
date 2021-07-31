@@ -347,17 +347,7 @@ def sm_to_fnf(infile):
 
 
 							if notes_row[j] in ("1","2","4"):
-								newPenis = j
-								if j > 3:
-									fnf_section["mustHitSection"] = True
-									newPenis = j - 4
-									hitEm = True
-								if j < 3 and hitEm:
-									newPenis = j + 4
-									print(newPenis)
-								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, newPenis, 0]
-								if hitEm and j < 3:
-									print(note)
+								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j, 0]
 								section_notes.append(note)
 								if notes_row[j] in ("2","4"):
 									tracked_holds[j] = note
@@ -368,11 +358,7 @@ def sm_to_fnf(infile):
 									del tracked_holds[j]
 									note[2] = tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset - note[0]
 							elif notes_row[j] == "M": # mines work with tricky fire notes
-								newPenis = j
-								if j > 3:
-									fnf_section["mustHitSection"] = True
-									newPenis = j - 4
-								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, newPenis + 8, 0]
+								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j + 8, 0]
 								section_notes.append(note)
 					
 					fnf_section["sectionNotes"] = section_notes
