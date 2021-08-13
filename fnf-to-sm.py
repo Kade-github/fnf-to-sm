@@ -162,7 +162,7 @@ def fnf_to_sm(infile):
 			bpms = bpms[:-1] + ";\n"
 
 			# write .sm header
-			sm_header = "#TITLE:{}\n".format(song_name)
+			sm_header = "#TITLE:{};\n".format(song_name)
 			sm_header += "#MUSIC:{}.ogg;\n".format(song_name)
 			sm_header += bpms
 
@@ -190,6 +190,7 @@ def fnf_to_sm(infile):
 				else:
 					notes[tick][note] = 2
 					# 3 is "long note toggle off", so we need to set it after a 2
+					# FIXME long note tails can be overwritten by other notes
 					long_end = timeToTick(section_note[0] + section_note[2])
 					if long_end not in notes:
 						notes[long_end] = [0]*NUM_COLUMNS
@@ -202,7 +203,6 @@ def fnf_to_sm(infile):
 
 		if len(notes) > 0:
 			# write chart & difficulty info
-			sm_notes += "\n"
 			sm_notes += "#NOTES:\n"
 			sm_notes += "	  dance-double:\n"
 			sm_notes += "	  :\n"
