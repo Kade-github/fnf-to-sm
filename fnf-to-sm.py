@@ -335,50 +335,47 @@ def sm_to_fnf(infile):
 					fnf_section["mustHitSection"] = False
 					fnf_section["typeOfSection"] = 0
 					
-					hitEm = False
-
 					section_notes = []
-					for i in range(len(measure_notes)):
-						notes_row = measure_notes[i]
-						for j in range(len(notes_row)):
+					for row_num in range(len(measure_notes)):
+						notes_row = measure_notes[row_num]
+						for col_num in range(len(notes_row)):
 
-							# since in dance-double we're assuming that 4-7 is bf and 0-3 is player2.
+							# since in dance-double we're assuming that col 4-7 is bf and col 0-3 is player2
 							# so we gotta minus 4 or add 4 etc.
 
-
-							if notes_row[j] in ("1","2","4"):
-								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j, 0]
+							# append single notes, hold notes, and roll notes
+							if notes_row[col_num] in ("1","2","4"):
+								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num, 0]
 								section_notes.append(note)
-								if notes_row[j] in ("2","4"):
-									tracked_holds[j] = note
-							# hold tails
-							elif notes_row[j] == "3":
-								if j in tracked_holds:
-									note = tracked_holds[j]
-									del tracked_holds[j]
-									note[2] = tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset - note[0]
-							elif notes_row[j] == "M": # mines work with tricky fire notes
-								note = [tickToTime(MEASURE_TICKS * section_number + i * ticks_per_row) - offset, j + 8, 0]
+								if notes_row[col_num] in ("2","4"):
+									tracked_holds[col_num] = note
+							# turn hold/roll tails into note duration
+							elif notes_row[col_num] == "3":
+								if col_num in tracked_holds:
+									note = tracked_holds[col_num]
+									del tracked_holds[col_num]
+									note[2] = tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset - note[0]
+							# mines work with tricky fire notes
+							elif notes_row[col_num] == "M":
+								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num + 8, 0]
 								section_notes.append(note)
 					
 					fnf_section["sectionNotes"] = section_notes
-					
-					section_number += 1
 					fnf_notes.append(fnf_section)
+					section_number += 1
 					
 					# don't skip the ending semicolon
 					if line.strip()[0] != ";":
 						line = chartfile.readline()
 			
+			# continue reading the file
 			line = chartfile.readline()
 			
 	# assemble the fnf json
 
 	player2 = input("Input Player2: ")
 	player1 = input("Input Player1: ")
-
 	songTitle = input("Input song title: ")
-
 	keStage = input("Kade Engine Stage (Optional, if you don't use KE put in nothing): ")
 
 	chart_json = {}
