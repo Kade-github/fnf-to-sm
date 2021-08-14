@@ -380,14 +380,14 @@ def sm_to_fnf(infile):
 			line = chartfile.readline().strip()
 			
 	# assemble the fnf json
-	player1 = input("Input Player1: ")
-	player2 = input("Input Player2: ")
-	songTitle = input("Input song title: ")
-	keStage = input("Kade Engine Stage (Optional, if you don't use KE put in nothing): ")
+	player1 = input("Input Player1 (defaults to bf): ") or "bf"
+	player2 = input("Input Player2 (no default): ")
+	title = input("Input song title (auto defaults): ") or title
+	keStage = input("Input Kade Engine stage (optional): ")
 
 	chart_json = {
 		"song": {
-			"song": songTitle,
+			"song": title,
 			"needsVoices": True,
 			"player1": player1,
 			"player2": player2,
