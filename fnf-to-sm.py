@@ -402,10 +402,9 @@ def sm_to_fnf(infile):
 	if keStage:
 		chart_json["song"]["stage"] = keStage
 
-	songTitle += ".json"
-	#with open("{}.json".format(title), "w") as outfile:
-	with open(songTitle.format(title).lower(), "w") as outfile:
-		json.dump(chart_json, outfile)
+	songTitle = "charts\\" + songTitle.replace(" ", "-").lower() + ".json"
+	with open(songTitle, "w") as outfile:
+		json.dump(chart_json, outfile, separators=(",", ":"))
 
 def usage():
 	print("FNF SM converter")
