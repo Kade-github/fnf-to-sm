@@ -305,6 +305,7 @@ def sm_to_fnf(infile):
 				tracked_holds = {} # for tracking hold notes, need to add tails later
 				line = chartfile.readline().strip()
 				while line[0] != ";":
+					# read each measure
 					measure_notes = []
 					while line[0] not in (",",";"):
 						if notes_re.match(line) != None:
@@ -314,6 +315,7 @@ def sm_to_fnf(infile):
 					# for ticks-to-time, ticks don't have to be integer :)
 					ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
 					
+					# prepare the current section
 					fnf_section = {
 						"lengthInSteps": 16,
 						"bpm": tickToBPM(section_number * MEASURE_TICKS),
@@ -325,20 +327,24 @@ def sm_to_fnf(infile):
 					if len(fnf_notes) > 0:
 						fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
 					
+					# convert notes in section
 					section_notes = []
 					for row_num in range(len(measure_notes)):
 						notes_row = measure_notes[row_num]
 						for col_num in range(len(notes_row)):
 
-							# since in dance-double we're assuming that col 4-7 is bf and col 0-3 is player2
-							# so we gotta minus 4 or add 4 etc.
+							# since in dance-double, we're assuming that col 4-7 is the player and col 0-3 is the opponent
 
 							# append single notes, hold notes, and roll notes
 							if notes_row[col_num] in ("1","2","4"):
 								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num, 0]
 								section_notes.append(note)
+								# track hold notes and roll notes as long notes
 								if notes_row[col_num] in ("2","4"):
 									tracked_holds[col_num] = note
+								# mustHitSection when player side has notes
+								if col_num in range(4,8):
+									fnf_section["mustHitSection"] = True
 							# turn hold/roll tails into note duration
 							elif notes_row[col_num] == "3":
 								if col_num in tracked_holds:
@@ -349,7 +355,8 @@ def sm_to_fnf(infile):
 							elif notes_row[col_num] == "M":
 								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num + 8, 0]
 								section_notes.append(note)
-					
+
+					# append converted section
 					fnf_section["sectionNotes"] = section_notes
 					fnf_notes.append(fnf_section)
 					section_number += 1
@@ -357,6 +364,17 @@ def sm_to_fnf(infile):
 					# don't skip the ending semicolon
 					if line[0] != ";":
 						line = chartfile.readline().strip()
+			
+				# swap sides for mustHitSection
+				for section in fnf_notes:
+					if section["mustHitSection"]:
+						for note in section["sectionNotes"]:
+							# swap opponent side
+							if note[1] in range(0,4) or note[1] in range(8,12):
+								note[1] += 4
+							# swap player side
+							elif note[1] in range(4,8) or note[1] in range(12,16):
+								note[1] -= 4
 			
 			# continue reading the file
 			line = chartfile.readline().strip()
