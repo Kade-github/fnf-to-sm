@@ -68,7 +68,7 @@ def measure_gcd(num_set, MEASURE_TICKS):
 		d = math.gcd(d, x)
 		if d == 1:
 			return d
-	return d;
+	return d
 
 tempomarkers = []
 
@@ -262,7 +262,7 @@ def sm_to_fnf(infile):
 	offset = 0
 	print("Converting {}".format(infile))
 	with open(infile, "r") as chartfile:
-		metatag_re = re.compile("^#(.+):(.+);")
+		metatag_re = re.compile("^#(.+):(.+);$")
 		notes_re = re.compile("^[a-zA-Z0-9]{8}$")
 		line = chartfile.readline().strip()
 		while len(line) > 0:
@@ -402,8 +402,8 @@ def sm_to_fnf(infile):
 	if keStage:
 		chart_json["song"]["stage"] = keStage
 
-	songTitle = "charts\\" + songTitle.replace(" ", "-").lower() + ".json"
-	with open(songTitle, "w") as outfile:
+	title = "charts\\" + title.replace(" ", "-").lower() + ".json"
+	with open(title, "w") as outfile:
 		json.dump(chart_json, outfile, separators=(",", ":"))
 
 def usage():
