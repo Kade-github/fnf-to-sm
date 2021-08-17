@@ -51,13 +51,13 @@ class TempoMarker:
 
 	def getTick(self):
 		return self.tick_pos
-		
+
 	def getTime(self):
 		return self.time_pos
-	
+
 	def timeToTick(self, note_time):
 		return int(round(self.tick_pos + (float(note_time) - self.time_pos) * MEASURE_TICKS * self.bpm / 240000))
-		
+
 	def tickToTime(self, note_tick):
 		return self.time_pos + (float(note_tick) - self.tick_pos) / MEASURE_TICKS * 240000 / self.bpm
 
@@ -78,7 +78,7 @@ def timeToTick(timestamp):
 		if i == len(tempomarkers) - 1 or tempomarkers[i+1].getTime() > timestamp:
 			return tempomarkers[i].timeToTick(timestamp)
 	return 0
-			
+
 def tickToTime(tick):
 	for i in range(len(tempomarkers)):
 		if i == len(tempomarkers) - 1 or tempomarkers[i+1].getTick() > tick:
@@ -93,24 +93,24 @@ def tickToBPM(tick):
 
 def fnf_to_sm(infile):
 	chart_jsons = []
-	
+
 	# given a normal difficulty .json,
 	# try to detect all 3 FNF difficulties if possible
 	infile_name, infile_ext = os.path.splitext(infile)
 	infile_easy = infile_name + "-easy" + FNF_EXT
 	infile_hard = infile_name + "-hard" + FNF_EXT
-	
+
 	with open(infile, "r") as chartfile:
 		chart_json = json.loads(chartfile.read().strip('\0'))
 		chart_json["diff"] = "Medium"
 		chart_jsons.append(chart_json)
-		
+
 	if os.path.isfile(infile_easy):
 		with open(infile_easy, "r") as chartfile:
 			chart_json = json.loads(chartfile.read().strip('\0'))
 			chart_json["diff"] = "Easy"
 			chart_jsons.append(chart_json)
-			
+
 	if os.path.isfile(infile_hard):
 		with open(infile_hard, "r") as chartfile:
 			chart_json = json.loads(chartfile.read().strip('\0'))
@@ -127,7 +127,7 @@ def fnf_to_sm(infile):
 		if len(sm_header) == 0:
 			song_name = chart_json["song"]["song"]
 			song_bpm = chart_json["song"]["bpm"]
-			
+
 			print("Converting {} to {}.sm".format(infile, song_name))
 
 			# build tempomap
@@ -137,7 +137,7 @@ def fnf_to_sm(infile):
 			current_time = 0.0
 			for i in range(num_sections):
 				section = song_notes[i]
-					
+
 				if section.get("changeBPM", 0) != 0:
 					section_bpm = float(section["bpm"])
 				elif current_bpm == None:
@@ -180,7 +180,7 @@ def fnf_to_sm(infile):
 				if section["mustHitSection"]:
 					note = (note + 4) % 8
 				length = section_note[2]
-				
+
 				# Initialize a note for this tick position
 				if tick not in notes:
 					notes[tick] = [0]*NUM_COLUMNS
@@ -221,7 +221,7 @@ def fnf_to_sm(infile):
 				for i in range(measureStart, measureEnd):
 					if i in notes:
 						valid_indexes.add(i - measureStart)
-				
+
 				noteStep = measure_gcd(valid_indexes, MEASURE_TICKS)
 
 				for i in range(measureStart, measureEnd, noteStep):
@@ -277,7 +277,7 @@ def sm_to_fnf(infile):
 					offset = float(tag_matches[1]) * 1000
 				elif tag_matches[0] == "BPMS":
 					parse_sm_bpms(tag_matches[1])
-				
+
 				# skip to next line
 				line = chartfile.readline().strip()
 				continue
@@ -289,7 +289,7 @@ def sm_to_fnf(infile):
 				if chartfile.readline().strip() != "dance-double:":
 					line = chartfile.readline().strip()
 					continue
-				
+
 				chartfile.readline() # skip empty line
 				chartfile.readline() # skip difficulty level
 					# TODO support multiple difficulties in a simfile
@@ -311,10 +311,10 @@ def sm_to_fnf(infile):
 						if notes_re.match(line) != None:
 							measure_notes.append(line)
 						line = chartfile.readline().strip()
-					
+
 					# for ticks-to-time, ticks don't have to be integer :)
 					ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
-					
+
 					# prepare the current section
 					fnf_section = {
 						"lengthInSteps": 16,
@@ -326,7 +326,7 @@ def sm_to_fnf(infile):
 
 					if len(fnf_notes) > 0:
 						fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
-					
+
 					# convert notes in section
 					section_notes = []
 					for row_num in range(len(measure_notes)):
@@ -360,11 +360,11 @@ def sm_to_fnf(infile):
 					fnf_section["sectionNotes"] = section_notes
 					fnf_notes.append(fnf_section)
 					section_number += 1
-					
+
 					# don't skip the ending semicolon
 					if line[0] != ";":
 						line = chartfile.readline().strip()
-			
+
 				# swap sides for mustHitSection
 				for section in fnf_notes:
 					if section["mustHitSection"]:
@@ -375,10 +375,10 @@ def sm_to_fnf(infile):
 							# swap player side
 							elif note[1] in range(4,8) or note[1] in range(12,16):
 								note[1] -= 4
-			
+
 			# continue reading the file
 			line = chartfile.readline().strip()
-			
+
 	# assemble the fnf json
 	player1 = input("Input Player1 (defaults to bf): ") or "bf"
 	player2 = input("Input Player2 (no default): ")
@@ -416,7 +416,7 @@ def main():
 	if len(sys.argv) < 2:
 		print("Error: not enough arguments")
 		usage()
-	
+
 	infile = sys.argv[1]
 	infile_name, infile_ext = os.path.splitext(os.path.basename(infile))
 	if infile_ext == FNF_EXT:
