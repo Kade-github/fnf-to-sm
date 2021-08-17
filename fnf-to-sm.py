@@ -30,6 +30,7 @@ VERSION = "v0.1.2"
 SM_EXT = ".sm"
 SSC_EXT = ".ssc"
 FNF_EXT = ".json"
+CHART_FOLDER = "charts\\"
 
 # stepmania editor's default note precision is 1/192
 MEASURE_TICKS = 192
@@ -257,8 +258,6 @@ def parse_sm_bpms(bpm_string):
 
 def sm_to_fnf(infile):
 	title = "Simfile"
-	fnf_notes = []
-	section_number = 0
 	offset = 0
 	print("Converting {}".format(infile))
 	with open(infile, "r") as chartfile:
@@ -285,47 +284,51 @@ def sm_to_fnf(infile):
 			# TODO support SSC
 			# read each chart in simfile
 			if line == "#NOTES:":
+				# read chart meta tags
+				chart_tags = {
+					"chartType": chartfile.readline().strip(),
+					"chartAuthor": chartfile.readline().strip(),
+					"difficultyLevel": chartfile.readline().strip(),
+					"difficultyRating": chartfile.readline().strip(),
+					"grooveRadar": chartfile.readline().strip(),
+				}
+
 				# skip charts that are not dance double
-				if chartfile.readline().strip() != "dance-double:":
+				if chart_tags["chartType"] != "dance-double:":
 					line = chartfile.readline().strip()
 					continue
 
-				chartfile.readline() # skip empty line
-				chartfile.readline() # skip difficulty level
-					# TODO support multiple difficulties in a simfile
-					# TODO support difficulties other than Challenge
-					#if line.strip() != "Challenge:":
-					#if line.strip() != "Hard:":
-						#line = chartfile.readline()
-						#continue
-				chartfile.readline() # skip difficulty rating
-				chartfile.readline() # skip groove radar
-
+				# skip unused meta tags
+				del chart_tags["chartType"]
+				del chart_tags["chartAuthor"]
+				del chart_tags["difficultyRating"]
+				del chart_tags["grooveRadar"]
+				
 				# read notes in chart
+				fnf_notes = []
 				tracked_holds = {} # for tracking hold notes, need to add tails later
 				line = chartfile.readline().strip()
 				while line[0] != ";":
-					# read each measure
+					# read the current measure
 					measure_notes = []
 					while line[0] not in (",",";"):
 						if notes_re.match(line) != None:
 							measure_notes.append(line)
 						line = chartfile.readline().strip()
 
-					# for ticks-to-time, ticks don't have to be integer :)
-					ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
-
 					# prepare the current section
+					section_num = len(fnf_notes)
 					fnf_section = {
-						"lengthInSteps": 16,
-						"bpm": tickToBPM(section_number * MEASURE_TICKS),
-						"changeBPM": False,
+						"bpm": tickToBPM(section_num * MEASURE_TICKS),
+						"changeBPM": fnf_section["bpm"] != fnf_notes[-1]["bpm"]
+						if section_num else False,
 						"mustHitSection": False,
+						"lengthInSteps": 16,
 						"typeOfSection": 0,
 					}
 
-					if len(fnf_notes) > 0:
-						fnf_section["changeBPM"] = fnf_section["bpm"] != fnf_notes[-1]["bpm"]
+					# for ticks-to-time, ticks don't have to be integer :)
+					ticks_per_row = float(MEASURE_TICKS) / len(measure_notes)
 
 					# convert notes in section
 					section_notes = []
@@ -337,7 +340,7 @@ def sm_to_fnf(infile):
 
 							# append single notes, hold notes, and roll notes
 							if notes_row[col_num] in ("1","2","4"):
-								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num, 0]
+								note = [tickToTime(MEASURE_TICKS * section_num + row_num * ticks_per_row) - offset, col_num, 0]
 								section_notes.append(note)
 								# track hold notes and roll notes as long notes
 								if notes_row[col_num] in ("2","4"):
@@ -350,16 +353,15 @@ def sm_to_fnf(infile):
 								if col_num in tracked_holds:
 									note = tracked_holds[col_num]
 									del tracked_holds[col_num]
-									note[2] = tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset - note[0]
+									note[2] = tickToTime(MEASURE_TICKS * section_num + row_num * ticks_per_row) - offset - note[0]
 							# mines work with tricky fire notes
 							elif notes_row[col_num] == "M":
-								note = [tickToTime(MEASURE_TICKS * section_number + row_num * ticks_per_row) - offset, col_num + 8, 0]
+								note = [tickToTime(MEASURE_TICKS * section_num + row_num * ticks_per_row) - offset, col_num + 8, 0]
 								section_notes.append(note)
 
 					# append converted section
 					fnf_section["sectionNotes"] = section_notes
 					fnf_notes.append(fnf_section)
-					section_number += 1
 
 					# don't skip the ending semicolon
 					if line[0] != ";":
@@ -376,35 +378,51 @@ def sm_to_fnf(infile):
 							elif note[1] in range(4,8) or note[1] in range(12,16):
 								note[1] -= 4
 
+				# receive input
+				# TODO quality of life: only ask for input once
+				player1 = input("Input Player1 (defaults to bf): ") or "bf"
+				player2 = input("Input Player2 (no default): ")
+				chartTitle = input("Input song title (auto defaults): ") or title
+				keStage = input("Input Kade Engine stage (optional): ")
+
+				# prepare the chart json
+				chart_json = {
+					"song": {
+						"song": chartTitle,
+						"needsVoices": True,
+						"player1": player1,
+						"player2": player2,
+						"speed": 2.0,
+						"bpm": tempomarkers[0].getBPM(),
+						#"sections": 0,
+						#"sectionLengths": [],
+						"notes": fnf_notes,
+					},
+				}
+
+				if keStage:
+					chart_json["song"]["stage"] = keStage
+
+				# prepare suffix for difficulty level
+				if chart_tags["difficultyLevel"] == "Medium:":
+					chart_tags["difficultyLevel"] = ""
+				else:
+					chart_tags["difficultyLevel"] = "-" + chart_tags["difficultyLevel"][:-1].lower()
+
+				# prepare the complete file name
+				chartTitle = (
+					CHART_FOLDER +
+					chartTitle.replace(" ", "-").lower() +
+					chart_tags["difficultyLevel"] +
+					FNF_EXT
+				)
+
+				# convert chart to json
+				with open(chartTitle, "w") as outfile:
+					json.dump(chart_json, outfile, separators=(",", ":"))
+
 			# continue reading the file
 			line = chartfile.readline().strip()
-
-	# assemble the fnf json
-	player1 = input("Input Player1 (defaults to bf): ") or "bf"
-	player2 = input("Input Player2 (no default): ")
-	title = input("Input song title (auto defaults): ") or title
-	keStage = input("Input Kade Engine stage (optional): ")
-
-	chart_json = {
-		"song": {
-			"song": title,
-			"needsVoices": True,
-			"player1": player1,
-			"player2": player2,
-			"speed": 2.0,
-			"bpm": tempomarkers[0].getBPM(),
-			#"sections": 0,
-			#"sectionLengths": [],
-			"notes": fnf_notes,
-		},
-	}
-
-	if keStage:
-		chart_json["song"]["stage"] = keStage
-
-	title = "charts\\" + title.replace(" ", "-").lower() + ".json"
-	with open(title, "w") as outfile:
-		json.dump(chart_json, outfile, separators=(",", ":"))
 
 def usage():
 	print("FNF SM converter")
