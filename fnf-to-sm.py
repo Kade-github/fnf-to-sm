@@ -257,21 +257,28 @@ def parse_sm_bpms(bpm_string):
 			tempomarkers.append(TempoMarker(current_bpm, current_tick, current_time))
 
 def sm_to_fnf(infile):
-	title = "Simfile"
-	offset = 0
+	# input values for the converted file
 	print("Converting {}".format(infile))
+
+	songTitle = input("Input song title (auto defaults): ") or "Simfile"
+	player1 = input("Input Player1 (defaults to bf): ") or "bf"
+	player2 = input("Input Player2 (no default): ")
+	keStage = input("Input Kade Engine stage (optional): ")
+
+	# read the SM file
 	with open(infile, "r") as chartfile:
+		offset = 0
 		metatag_re = re.compile("^#(.+):(.+);$")
 		notes_re = re.compile("^[a-zA-Z0-9]{8}$")
 		line = chartfile.readline().strip()
 		while len(line) > 0:
 			# read meta tags
 			tag_matches = metatag_re.match(line)
-			if tag_matches != None:
+			if tag_matches:
 				tag_matches = tag_matches.groups()
 
 				if tag_matches[0] == "TITLE":
-					title = tag_matches[1]
+					songTitle = tag_matches[1]
 				elif tag_matches[0] == "OFFSET":
 					offset = float(tag_matches[1]) * 1000
 				elif tag_matches[0] == "BPMS":
@@ -303,7 +310,7 @@ def sm_to_fnf(infile):
 				del chart_tags["chartAuthor"]
 				del chart_tags["difficultyRating"]
 				del chart_tags["grooveRadar"]
-				
+
 				# read notes in chart
 				fnf_notes = []
 				tracked_holds = {} # for tracking hold notes, need to add tails later
@@ -378,17 +385,10 @@ def sm_to_fnf(infile):
 							elif note[1] in range(4,8) or note[1] in range(12,16):
 								note[1] -= 4
 
-				# receive input
-				# TODO quality of life: only ask for input once
-				player1 = input("Input Player1 (defaults to bf): ") or "bf"
-				player2 = input("Input Player2 (no default): ")
-				chartTitle = input("Input song title (auto defaults): ") or title
-				keStage = input("Input Kade Engine stage (optional): ")
-
 				# prepare the chart json
 				chart_json = {
 					"song": {
-						"song": chartTitle,
+						"song": songTitle,
 						"needsVoices": True,
 						"player1": player1,
 						"player2": player2,
@@ -412,7 +412,7 @@ def sm_to_fnf(infile):
 				# prepare the complete file name
 				chartTitle = (
 					CHART_FOLDER +
-					chartTitle.replace(" ", "-").lower() +
+					songTitle.replace(" ", "-").lower() +
 					chart_tags["difficultyLevel"] +
 					FNF_EXT
 				)
